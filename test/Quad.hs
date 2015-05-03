@@ -15,7 +15,7 @@ import Mesh
 makeQuad :: GLProgram -> IO Mesh
 makeQuad program = do
 
-    aPosition <- getShaderAttribute program "aPosition"
+    aVertex <- getShaderAttribute program "aVertex"
 
     -- Setup a VAO
     vaoQuad <- overPtr (glGenVertexArrays 1)
@@ -45,10 +45,10 @@ makeQuad program = do
             glBufferData GL_ARRAY_BUFFER quadVerticesSize (castPtr quadVerticesPtr) GL_STATIC_DRAW 
 
     -- Describe our vertices array to OpenGL
-    glEnableVertexAttribArray (fromIntegral (unAttributeLocation aPosition))
+    glEnableVertexAttribArray (fromIntegral (unAttributeLocation aVertex))
 
     glVertexAttribPointer
-        (fromIntegral (unAttributeLocation aPosition)) -- attribute
+        (fromIntegral (unAttributeLocation aVertex)) -- attribute
         3                 -- number of elements per vertex, here (x,y,z)
         GL_FLOAT          -- the type of each element
         GL_FALSE          -- don't normalize
