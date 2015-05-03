@@ -1,14 +1,9 @@
-module Mesh where
+module Graphics.GL.Pal.Mesh where
 import Graphics.GL
 import Control.Monad.Trans
 import Foreign
 
-newtype VertexArrayObject = VertexArrayObject   { unVertexArrayObject   :: GLuint }
-
-data Mesh = Mesh
-        { meshVAO          :: VertexArrayObject
-        , meshIndexCount   :: GLsizei
-        }
+import Graphics.GL.Pal.Types
 
 drawMesh :: MonadIO m => Mesh -> m ()
 drawMesh mesh = do

@@ -17,9 +17,12 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     
-    Graphics.GL.Pal.Shader
-    Graphics.GL.Pal.Reshader
+  exposed-modules:
+    Graphics.GL.Pal,
+    Graphics.GL.Pal.Reshader,
+    Graphics.GL.Pal.Shader,
+    Graphics.GL.Pal.Types,
+    Graphics.GL.Pal.Mesh
   -- other-modules:       
   -- other-extensions:    
   build-depends:       

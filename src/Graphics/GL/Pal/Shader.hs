@@ -1,6 +1,7 @@
 module Graphics.GL.Pal.Shader where
 
 import Graphics.GL
+import Graphics.GL.Pal.Types
 
 import Control.Monad
 import Control.Monad.Trans
@@ -18,11 +19,6 @@ import Data.Foldable
 overPtr :: (MonadIO m, Storable a) => (Ptr a -> IO b) -> m a
 overPtr f = liftIO (alloca (\p -> f p >> peek p))
 
-newtype GLProgram         = GLProgram           { unGLProgram           :: GLuint }
-
-newtype AttributeLocation = AttributeLocation   { unAttributeLocation   :: GLint  }
-newtype UniformLocation   = UniformLocation     { unUniformLocation     :: GLint  }
-newtype TextureID         = TextureID           { unTextureID           :: GLuint }
 
 useProgram :: MonadIO m => GLProgram -> m ()
 useProgram (GLProgram program) = glUseProgram (fromIntegral program)

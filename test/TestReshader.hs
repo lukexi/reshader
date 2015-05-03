@@ -7,8 +7,7 @@ import Control.Monad
 import Linear
 
 import SetupGLFW
-import Graphics.GL.Pal.Reshader
-import Graphics.GL.Pal.Shader
+import Graphics.GL.Pal
 import Cube
 
 -------------------------------------------------------------

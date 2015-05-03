@@ -9,6 +9,7 @@ import Data.String
 import Graphics.GL
 
 import Graphics.GL.Pal.Shader
+import Graphics.GL.Pal.Types
 
 createReshaderProgram :: String -> String -> IO (IO GLProgram)
 createReshaderProgram vertexShaderPath fragmentShaderPath = do

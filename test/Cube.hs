@@ -1,13 +1,11 @@
 module Cube where
 
-import Graphics.GL.Pal.Shader
+import Graphics.GL.Pal
 
 import Graphics.GL
 import Foreign
 import Linear
 import Data.Foldable
-
-import Mesh
 
 data Cube = Cube
         { cubeVAO        :: VertexArrayObject
