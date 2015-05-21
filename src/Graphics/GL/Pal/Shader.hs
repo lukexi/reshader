@@ -23,8 +23,8 @@ overPtr f = liftIO (alloca (\p -> f p >> peek p))
 useProgram :: MonadIO m => GLProgram -> m ()
 useProgram (GLProgram program) = glUseProgram (fromIntegral program)
 
-uniformM44 :: UniformLocation -> M44 GLfloat -> IO ()
-uniformM44 uniform matrix = do
+uniformM44 :: MonadIO m => UniformLocation -> M44 GLfloat -> m ()
+uniformM44 uniform matrix = liftIO $ do
     let mvpUniformLoc = fromIntegral (unUniformLocation uniform)
     withArray (concatMap toList (transpose matrix)) (\matrixPtr ->
         glUniformMatrix4fv mvpUniformLoc 1 GL_FALSE matrixPtr)
