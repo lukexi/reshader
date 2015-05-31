@@ -29,6 +29,12 @@ uniformM44 uniform matrix = liftIO $ do
     withArray (concatMap toList (transpose matrix)) (\matrixPtr ->
         glUniformMatrix4fv mvpUniformLoc 1 GL_FALSE matrixPtr)
 
+uniformM33 :: MonadIO m => UniformLocation -> M33 GLfloat -> m ()
+uniformM33 uniform matrix = liftIO $ do
+    let mvpUniformLoc = fromIntegral (unUniformLocation uniform)
+    withArray (concatMap toList (transpose matrix)) (\matrixPtr ->
+        glUniformMatrix3fv mvpUniformLoc 1 GL_FALSE matrixPtr)
+
 ---------------
 -- Load shaders
 ---------------
