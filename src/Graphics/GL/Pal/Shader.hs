@@ -96,7 +96,9 @@ getShaderAttribute :: GLProgram -> String -> IO AttributeLocation
 getShaderAttribute (GLProgram prog) attributeName = do
     location <- withCString attributeName $ \attributeNameCString -> 
         glGetAttribLocation prog attributeNameCString
-    when (location == -1) $ error $ "Couldn't bind attribute: " ++ attributeName 
+    when (location == -1) $ 
+        putStrLn $ "Couldn't bind attribute: " ++ attributeName 
+            ++ " - ignoring since it might have just been optimized out"
     return (AttributeLocation location)
 
 getShaderUniform :: GLProgram -> String -> IO UniformLocation
