@@ -18,8 +18,7 @@ import Data.Foldable
 
 import Data.Text (Text)
 
-overPtr :: (MonadIO m, Storable a) => (Ptr a -> IO b) -> m a
-overPtr f = liftIO (alloca (\p -> f p >> peek p))
+
 
 
 useProgram :: MonadIO m => GLProgram -> m ()
