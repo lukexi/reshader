@@ -18,82 +18,97 @@ import Linear
 import Data.Foldable
 import Prelude hiding (concatMap)
 
-overPtr :: (MonadIO m, Storable a) => (Ptr a -> IO b) -> m a
-overPtr f = liftIO (alloca (\p -> f p >> peek p))
+import Data.Text (Text)
+
+
 
 
 useProgram :: MonadIO m => GLProgram -> m ()
 useProgram (GLProgram program) = glUseProgram (fromIntegral program)
 
-uniformM44 :: UniformLocation -> M44 GLfloat -> IO ()
-uniformM44 uniform matrix = do
+uniformM44 :: MonadIO m => UniformLocation -> M44 GLfloat -> m ()
+uniformM44 uniform matrix = liftIO $ do
     let mvpUniformLoc = fromIntegral (unUniformLocation uniform)
     withArray (concatMap toList (transpose matrix)) (\matrixPtr ->
         glUniformMatrix4fv mvpUniformLoc 1 GL_FALSE matrixPtr)
+
+uniformM33 :: MonadIO m => UniformLocation -> M33 GLfloat -> m ()
+uniformM33 uniform matrix = liftIO $ do
+    let mvpUniformLoc = fromIntegral (unUniformLocation uniform)
+    withArray (concatMap toList (transpose matrix)) (\matrixPtr ->
+        glUniformMatrix3fv mvpUniformLoc 1 GL_FALSE matrixPtr)
 
 ---------------
 -- Load shaders
 ---------------
 
+-- | Takes the raw source of a pair of shader programs. 
+-- Useful when getting shader source from somewhere other than a file,
+-- or for munging shader source before compiling it.
+createShaderProgramFromSources :: String -> Text -> String -> Text -> IO GLProgram
+createShaderProgramFromSources vertexShaderName vertexShaderSource fragmentShaderName fragmentShaderSource = do 
+    
+    vertexShader <- glCreateShader GL_VERTEX_SHADER
+    compileShaderSource vertexShaderName vertexShaderSource vertexShader
+    fragmentShader <- glCreateShader GL_FRAGMENT_SHADER
+    compileShaderSource fragmentShaderName fragmentShaderSource fragmentShader
+
+    attachProgram vertexShader fragmentShader
+
 createShaderProgram :: FilePath -> FilePath -> IO GLProgram
-createShaderProgram vertexShaderPath fragmentShaderPath =
-   
-    do vertexShader <- glCreateShader GL_VERTEX_SHADER
-       compileShader vertexShaderPath vertexShader
-       fragmentShader <- glCreateShader GL_FRAGMENT_SHADER
-       compileShader fragmentShaderPath fragmentShader
-       shaderProg <- glCreateProgram
-       glAttachShader shaderProg vertexShader
-       glAttachShader shaderProg fragmentShader
-       glLinkProgram shaderProg
-       linked <- overPtr (glGetProgramiv shaderProg GL_LINK_STATUS)
-       when (linked == GL_FALSE)
-            (do maxLength <- overPtr (glGetProgramiv shaderProg GL_INFO_LOG_LENGTH)
-                logLines <- allocaArray
-                              (fromIntegral maxLength)
-                              (\p ->
-                                 alloca (\lenP ->
-                                           do glGetProgramInfoLog shaderProg maxLength lenP p
-                                              len <- peek lenP
-                                              peekCStringLen (p,fromIntegral len)))
-                putStrLn logLines)
-       return (GLProgram shaderProg)
-    where compileShader path shader =
-            do src <- Text.readFile path
-               BS.useAsCString
-                 (Text.encodeUtf8 src)
-                 (\ptr ->
-                    withArray [ptr]
-                              (\srcs ->
-                                 glShaderSource shader 1 srcs nullPtr))
-               glCompileShader shader
-               when True
-                    (do maxLength <- overPtr (glGetShaderiv shader GL_INFO_LOG_LENGTH)
-                        logLines <- allocaArray
-                                      (fromIntegral maxLength)
-                                      (\p ->
-                                         alloca (\lenP ->
-                                                   do glGetShaderInfoLog shader maxLength lenP p
-                                                      len <- peek lenP
-                                                      peekCStringLen (p,fromIntegral len)))
-                        when (length logLines > 0)
-                            (do putStrLn ("In " ++ path ++ ":")
-                                putStrLn logLines)
-                        )
+createShaderProgram vertexShaderPath fragmentShaderPath = do 
+    
+    vertexShader <- glCreateShader GL_VERTEX_SHADER
+    compileShaderAtPath vertexShaderPath vertexShader
+    fragmentShader <- glCreateShader GL_FRAGMENT_SHADER
+    compileShaderAtPath fragmentShaderPath fragmentShader
+
+    attachProgram vertexShader fragmentShader
+
+attachProgram :: GLuint -> GLuint -> IO GLProgram
+attachProgram vertexShader fragmentShader = do
+    program <- glCreateProgram
+    glAttachShader program vertexShader
+    glAttachShader program fragmentShader
+    glLinkProgram program
+
+    checkLinkStatus program
+    
+    return (GLProgram program)
+
+
+compileShaderAtPath :: FilePath -> GLuint -> IO ()
+compileShaderAtPath path shader = do
+    src <- Text.readFile path
+    compileShaderSource path src shader 
+
+compileShaderSource :: String -> Text -> GLuint -> IO ()
+compileShaderSource path src shader = do
+    
+    BS.useAsCString (Text.encodeUtf8 src) $ \ptr ->
+        withArray [ptr] $ \srcs ->
+            glShaderSource shader 1 srcs nullPtr
+    glCompileShader shader
+    
+    checkCompileStatus path shader
 
 
 getShaderAttribute :: GLProgram -> String -> IO AttributeLocation
 getShaderAttribute (GLProgram prog) attributeName = do
     location <- withCString attributeName $ \attributeNameCString -> 
         glGetAttribLocation prog attributeNameCString
-    when (location == -1) $ error $ "Coudn't bind attribute: " ++ attributeName 
+    when (location == -1) $ 
+        putStrLn $ "Couldn't bind attribute: " ++ attributeName 
+            ++ " - ignoring since it might have just been optimized out"
     return (AttributeLocation location)
 
 getShaderUniform :: GLProgram -> String -> IO UniformLocation
 getShaderUniform (GLProgram prog) uniformName = do
     location <- withCString uniformName $ \uniformNameCString -> 
         glGetUniformLocation prog uniformNameCString
-    when (location == -1) $ error $ "Coudn't bind uniform: " ++ uniformName 
+    when (location == -1) $ 
+        putStrLn $ "Couldn't bind uniform: " ++ uniformName 
+            ++ " - ignoring since it might have just been optimized out"
     return (UniformLocation location)
 
 glGetErrors :: IO ()
@@ -114,4 +129,30 @@ glGetErrors = do
       glGetErrors
 
 
+
+
+checkLinkStatus :: GLuint -> IO ()
+checkLinkStatus program = do
+    linked <- overPtr (glGetProgramiv program GL_LINK_STATUS)
+    when (linked == GL_FALSE) $ do
+        maxLength <- overPtr (glGetProgramiv program GL_INFO_LOG_LENGTH)
+        logLines <- allocaArray (fromIntegral maxLength) $ \p ->
+                        alloca $ \lenP -> do
+                            glGetProgramInfoLog program maxLength lenP p
+                            len <- peek lenP
+                            peekCStringLen (p, fromIntegral len)
+        putStrLn logLines
+
+checkCompileStatus :: String -> GLuint -> IO ()
+checkCompileStatus path shader = do
+    compiled <- overPtr (glGetShaderiv shader GL_COMPILE_STATUS)
+    when (compiled == GL_FALSE) $ do
+        maxLength <- overPtr (glGetShaderiv shader GL_INFO_LOG_LENGTH)
+        logLines <- allocaArray (fromIntegral maxLength) $ \p ->
+                        alloca $ \lenP -> do 
+                            glGetShaderInfoLog shader maxLength lenP p
+                            len <- peek lenP
+                            peekCStringLen (p, fromIntegral len)
+        putStrLn ("In " ++ path ++ ":")
+        putStrLn logLines
 

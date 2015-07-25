@@ -38,7 +38,7 @@ renderCube cube mvp = do
 makeCube :: GLProgram -> IO Cube
 makeCube program = do
 
-    aVertex <- getShaderAttribute program "aVertex"
+    aVertex   <- getShaderAttribute program "aVertex"
     aColor    <- getShaderAttribute program "aColor"
     aID       <- getShaderAttribute program "aID"
     uMVP      <- getShaderUniform   program "uMVP"
