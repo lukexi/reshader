@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternSynonyms #-}
 module Graphics.GL.Pal.Shader where
 
 import Graphics.GL
@@ -15,6 +16,7 @@ import qualified Data.Text.IO as Text
 
 import Linear
 import Data.Foldable
+import Prelude hiding (concatMap)
 
 overPtr :: (MonadIO m, Storable a) => (Ptr a -> IO b) -> m a
 overPtr f = liftIO (alloca (\p -> f p >> peek p))
