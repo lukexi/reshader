@@ -27,7 +27,7 @@ library
   -- other-modules:       
   -- other-extensions:    
   build-depends:       
-    base, gl, fsnotify, filepath,
+    base, gl, fsnotify>=0.2.1, filepath,
     mtl, text, bytestring, linear, JuicyPixels,
     vector
   hs-source-dirs:      src
